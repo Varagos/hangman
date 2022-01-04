@@ -1,13 +1,17 @@
 package com.example.hangman;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -17,10 +21,14 @@ public class MainController implements Initializable {
 //    public Button button;
 
     @FXML
-    public Label successPercentage;
-    public Label wordFound;
+    private BorderPane mainBorderPane;
+    @FXML
+    private Label successPercentage;
+    @FXML
+    private Label wordFound;
     public TextField letterTextField;
     public ImageView myImageView;
+    public MenuItem createMenuItem;
 
     Image[] myImages = {
             new Image(getClass().getResourceAsStream("hangman1.png")),
@@ -45,6 +53,45 @@ public class MainController implements Initializable {
         alert.setContentText("You have made 6 mistakes");
         alert.setHeaderText("Game over");
         alert.showAndWait();
+    }
+
+    /**
+     * Start application based on loaded dict
+     * if there is ongoing round clean its state
+     */
+    @FXML
+    private void startApp() {
+
+    }
+
+    /*
+    User gives dict-id
+    look inside media folder for it
+    if found initialize app,
+    else error message
+     */
+    @FXML
+    private void loadDictionary() {
+        System.out.println("hi");
+    }
+
+    /**
+     * User give dict-id for local file and openId
+     * for work to be found, if desc is fine create dict
+     * else show error message
+     */
+    @FXML
+    private void createDictionary() {
+        Stage root = (Stage) mainBorderPane.getScene().getWindow();
+        System.out.println("hi");
+        CreateDialog.display(root);
+    }
+
+    @FXML
+    private void exitApplication() {
+        System.out.println("Exiting application...");
+        Platform.exit();
+        System.exit(0);
     }
 
     @Override

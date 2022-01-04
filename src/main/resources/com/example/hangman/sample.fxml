@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.GridPane?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.hangman.MainController">
+<BorderPane fx:id="mainBorderPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.hangman.MainController">
    <top>
       <VBox BorderPane.alignment="CENTER">
          <children>
@@ -15,13 +15,17 @@
               <menus>
                 <Menu mnemonicParsing="false" text="Application">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="Close" />
-                        <MenuItem mnemonicParsing="false" text="Close" />
+                    <MenuItem mnemonicParsing="false" text="Start" />
+                        <MenuItem mnemonicParsing="false" text="Load" />
+                        <MenuItem fx:id="createMenuItem" mnemonicParsing="false" onAction="#createDictionary" text="Create" />
+                        <MenuItem mnemonicParsing="false" onAction="#exitApplication" text="Exit" />
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Details">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="Delete" />
+                    <MenuItem mnemonicParsing="false" text="Dictionary" />
+                        <MenuItem mnemonicParsing="false" text="Rounds" />
+                        <MenuItem mnemonicParsing="false" text="Solution" />
                   </items>
                 </Menu>
               </menus>
@@ -70,4 +74,17 @@
          </BorderPane.margin>
       </HBox>
    </bottom>
+   <right>
+      <GridPane prefHeight="287.0" prefWidth="291.0" BorderPane.alignment="CENTER">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+      </GridPane>
+   </right>
 </BorderPane>
