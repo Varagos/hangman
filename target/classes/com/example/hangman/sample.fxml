@@ -15,8 +15,8 @@
               <menus>
                 <Menu mnemonicParsing="false" text="Application">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="Start" />
-                        <MenuItem mnemonicParsing="false" text="Load" />
+                    <MenuItem fx:id="startMenuItem" mnemonicParsing="false" onAction="#startApp" text="Start" />
+                        <MenuItem fx:id="loadMenuItem" mnemonicParsing="false" onAction="#loadDictionary" text="Load" />
                         <MenuItem fx:id="createMenuItem" mnemonicParsing="false" onAction="#createDictionary" text="Create" />
                         <MenuItem mnemonicParsing="false" onAction="#exitApplication" text="Exit" />
                   </items>
@@ -32,7 +32,7 @@
             </MenuBar>
             <HBox spacing="10.0">
                <children>
-                  <Label text="Remaining words in dictionary:3" />
+                  <Label fx:id="activeDictionaryLength" text="Remaining words in dictionary:3" />
                   <Region HBox.hgrow="ALWAYS" />
                   <Label layoutX="10.0" layoutY="10.0" text="Total points: 55" />
                   <Region HBox.hgrow="ALWAYS" />

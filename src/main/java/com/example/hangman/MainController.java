@@ -1,6 +1,7 @@
 package com.example.hangman;
 
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -12,8 +13,11 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 
 import java.net.URL;
+import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class MainController implements Initializable {
@@ -23,12 +27,17 @@ public class MainController implements Initializable {
     @FXML
     private BorderPane mainBorderPane;
     @FXML
+    private Label activeDictionaryLength;
+    @FXML
     private Label successPercentage;
     @FXML
     private Label wordFound;
-    public TextField letterTextField;
-    public ImageView myImageView;
-    public MenuItem createMenuItem;
+    @FXML
+    private TextField letterTextField;
+    @FXML
+    private ImageView myImageView;
+    @FXML
+    private MenuItem createMenuItem;
 
     Image[] myImages = {
             new Image(getClass().getResourceAsStream("hangman1.png")),
@@ -40,6 +49,7 @@ public class MainController implements Initializable {
     };
 
     private HangmanGame hangmanGame;
+    private DictionaryManager dictionaryManager;
 
     public void handleButtonClick(ActionEvent event) {
         String str = letterTextField.getText();
@@ -61,7 +71,12 @@ public class MainController implements Initializable {
      */
     @FXML
     private void startApp() {
-
+        System.out.println("Starting new game...");
+        if (dictionaryManager.getActiveDictionary() == null) {
+            ErrorDialog.display("Failed to start new game", "Please load a dictionary first");
+            return;
+        }
+        hangmanGame.newGame();
     }
 
     /*
@@ -72,7 +87,13 @@ public class MainController implements Initializable {
      */
     @FXML
     private void loadDictionary() {
-        System.out.println("hi");
+        List<String> choices = dictionaryManager.getDictionaryChoices();
+        Optional<String> result = LoadDialog.display(choices);
+
+        result.ifPresent(letter -> {
+            System.out.println("Your choice: " + letter);
+            dictionaryManager.setActiveDictionary(letter);
+        });
     }
 
     /**
@@ -83,8 +104,22 @@ public class MainController implements Initializable {
     @FXML
     private void createDictionary() {
         Stage root = (Stage) mainBorderPane.getScene().getWindow();
-        System.out.println("hi");
-        CreateDialog.display(root);
+        Optional<Pair<String, String>> result = CreateDialog.display(root);
+
+        result.ifPresent(pairValues -> {
+            System.out.println("Dictionary ID=" + pairValues.getKey() + ", Open Library Id=" + pairValues.getValue());
+            try {
+                dictionaryManager.createDictionary(pairValues.getKey(), pairValues.getValue());
+            } catch (UndersizeException e) {
+                ErrorDialog.display("Undersize dictionary", e.getMessage());
+            } catch (UnbalancedException e) {
+                ErrorDialog.display("Unbalanced dictionary", e.getMessage());
+            } catch (Exception ex) {
+                System.out.println(ex);
+                ex.printStackTrace();
+                ExceptionDialog.display(ex);
+            }
+        });
     }
 
     @FXML
@@ -98,8 +133,15 @@ public class MainController implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         // runs after view loads,
         System.out.println("Loading user data...");
-        hangmanGame = new HangmanGame();
-        hangmanGame.newGame();
+        System.out.println("Initializing game...");
+        dictionaryManager = new DictionaryManager();
+        hangmanGame = new HangmanGame(dictionaryManager);
+//        hangmanGame.newGame();
+//        Remaining words in dictionary:3
+        activeDictionaryLength.textProperty().bind(
+                Bindings.concat("Words in active dictionary ")
+                        .concat(dictionaryManager.activeDictionaryLengthProperty().asString())
+        );
         wordFound.textProperty().bind(hangmanGame.wordFoundProperty());
 //        hangmanGame.play();
         successPercentage.setText("dummy");

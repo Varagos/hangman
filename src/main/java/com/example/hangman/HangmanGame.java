@@ -4,22 +4,10 @@ import javafx.beans.property.*;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Set;
 
 public class HangmanGame {
-    public static final String[] WORDS = {
-            "ABSTRACT", "ASSERT", "BOOLEAN", "BREAK", "BYTE",
-            "CASE", "CATCH", "CHAR", "CLASS", "CONST",
-            "CONTINUE", "DEFAULT", "DOUBLE", "DO", "ELSE",
-            "ENUM", "EXTENDS", "FALSE", "FINAL", "FINALLY",
-            "FLOAT", "FOR", "GOTO", "IF", "IMPLEMENTS",
-            "IMPORT", "INSTANCEOF", "INT", "INTERFACE",
-            "LONG", "NATIVE", "NEW", "NULL", "PACKAGE",
-            "PRIVATE", "PROTECTED", "PUBLIC", "RETURN",
-            "SHORT", "STATIC", "STRICTFP", "SUPER", "SWITCH",
-            "SYNCHRONIZED", "THIS", "THROW", "THROWS",
-            "TRANSIENT", "TRUE", "TRY", "VOID", "VOLATILE", "WHILE"
-    };
-
+    private DictionaryManager dictionaryManager;
     public static final Random RANDOM = new Random();
     // Users loses at 6 errors
     public static final int MAX_ERRORS = 6;
@@ -32,8 +20,13 @@ public class HangmanGame {
     private IntegerProperty nbErrors = new SimpleIntegerProperty(this, "nbErrors", 0);
     // letters already entered by user
     private int attemptNo = 0;
-    private DoubleProperty successPercentage = new SimpleDoubleProperty(this, "successPercentage", 0.00);
+    private DoubleProperty successPercentage = new SimpleDoubleProperty(this, "successPercentage"
+            , 0.00);
     private ArrayList<Character> letters = new ArrayList<Character>();
+
+    public HangmanGame(DictionaryManager dictionaryManager) {
+        this.dictionaryManager = dictionaryManager;
+    }
 
     public int getNbErrors() {
         return nbErrors.get();
@@ -72,7 +65,20 @@ public class HangmanGame {
     }
 
     private String pickRandomWord() {
-        return WORDS[RANDOM.nextInt(WORDS.length)];
+        Set<String> words = dictionaryManager.getActiveDictWords();
+
+        int size = words.size();
+        int item = RANDOM.nextInt(size); // In real life, the Random object should be
+        // rather more shared than this
+        int i = 0;
+        for (String word : words) {
+            if (i == item) {
+                System.out.println("Picked random word " + word);
+                return word;
+            }
+            i++;
+        }
+        throw new Error("Failed to pick random word");
     }
 
     /**
@@ -172,12 +178,5 @@ public class HangmanGame {
             System.out.println("\nYou lose!");
             System.out.println("=> Word to find was : " + wordToFind);
         }
-    }
-
-    public static void main(String[] args) {
-        System.out.println("hangman game :=)\n");
-        HangmanGame hangmanGame = new HangmanGame();
-        hangmanGame.newGame();
-//        hangmanGame.play();
     }
 }
