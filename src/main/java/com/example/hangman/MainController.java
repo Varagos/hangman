@@ -5,15 +5,17 @@ import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TextField;
+import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.Pair;
+import org.w3c.dom.Node;
+import org.w3c.dom.Text;
 
 import java.net.URL;
 import java.util.List;
@@ -61,7 +63,7 @@ public class MainController implements Initializable {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Oops");
         alert.setContentText("You have made 6 mistakes");
-        alert.setHeaderText("Game over");
+        alert.setHeaderText("Game over, the word was: " + hangmanGame.getWordToFind());
         alert.showAndWait();
     }
 
@@ -77,6 +79,7 @@ public class MainController implements Initializable {
             return;
         }
         hangmanGame.newGame();
+        populateRightGridPane();
     }
 
     /*
@@ -127,6 +130,87 @@ public class MainController implements Initializable {
         System.out.println("Exiting application...");
         Platform.exit();
         System.exit(0);
+    }
+
+    private void populateRightGridPane() {
+        String wordToFind = hangmanGame.getWordToFind();
+//        rightGridPane.setPadding(new Insets(10, 10, 10, 10));
+//        rightGridPane.setMinSize(300, 300);
+//        rightGridPane.setVgap(5);
+//        rightGridPane.setHgap(5);
+//        for (int i = 0, n = wordToFind.length(); i < n; i++) {
+//            char letter = wordToFind.charAt(i);
+//            Label letterLabel = new Label(" " + letter + " ");
+//            letterLabel.setMinWidth(Region.USE_PREF_SIZE);
+//
+//            rightGridPane.add(letterLabel, i, 0);
+//            System.out.println("Letter" + letter);
+//        }
+
+//        ColumnConstraints col1 = new ColumnConstraints();
+//        col1.setHgrow(Priority.ALWAYS);
+//
+//        ColumnConstraints col2 = new ColumnConstraints();
+//        col2.setHgrow(Priority.ALWAYS);
+
+//        rightGridPane.getColumnConstraints().addAll(new ColumnConstraints(60), col1,
+//                new ColumnConstraints(100), col2);
+//
+//        rightGridPane.addColumn(0, new Button("col 1"));
+//        rightGridPane.addColumn(1, new Button("col 2"));
+//        rightGridPane.addColumn(2, new Button("col 3"));
+//        rightGridPane.addColumn(3, new Button("col 4"));
+        GridPane gridpane = new GridPane();
+        int percentage = 100 / wordToFind.length();
+        gridpane.setGridLinesVisible(true);
+//        ColumnConstraints col1 = new ColumnConstraints();
+//        col1.setPercentWidth(25);
+//        ColumnConstraints col2 = new ColumnConstraints();
+//        col2.setPercentWidth(50);
+//        ColumnConstraints col3 = new ColumnConstraints();
+//        col3.setPercentWidth(25);
+
+        for (int i = 0, n = wordToFind.length(); i < n; i++) {
+            char letter = wordToFind.charAt(i);
+            ColumnConstraints col1 = new ColumnConstraints();
+            col1.setPercentWidth(percentage);
+
+            gridpane.getColumnConstraints().add(col1);
+
+            Button button = new Button(String.valueOf(letter));
+            gridpane.addColumn(i, button);
+            gridpane.setHalignment(button, HPos.CENTER);
+
+            FlowPane flow = new FlowPane();
+            flow.setAlignment(Pos.CENTER);
+            flow.setVgap(8);
+            flow.setHgap(4);
+            flow.setPrefWrapLength(300); // preferred width = 300
+            for (int letterAsci = 65; letterAsci <= 90; letterAsci++) {
+                Button letterButton = new Button(" " + (char) letterAsci + "");
+                flow.getChildren().add(letterButton);
+                int finalI = i;
+                int finalLetterAsci = letterAsci;
+                letterButton.setOnAction(e -> {
+                    System.out.println("Clicked column: " + finalI + ", and letter: " + (char) finalLetterAsci);
+                });
+            }
+            gridpane.add(flow, i, 1);
+        }
+//        gridpane.getColumnConstraints().addAll(col1, col2, col3);
+
+//        gridpane.addColumn(0, new Button("col 1"));
+//        gridpane.addColumn(1, new Button("col 2"));
+//        gridpane.addColumn(2, new Button("col 3"));
+
+        Insets insets = new Insets(0, 20, 0, 20);
+        BorderPane.setMargin(gridpane, insets);
+        gridpane.setStyle("-fx-background-color: #D8BFD8;");
+        mainBorderPane.setRight(gridpane);
+
+        gridpane.setPrefSize(2000, 2000); // Default width and height
+//        gridpane.setPrefWidth(mainBorderPane.widthProperty().getValue());
+        gridpane.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
     }
 
     @Override

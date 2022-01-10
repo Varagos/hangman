@@ -7,6 +7,8 @@ import java.util.Random;
 import java.util.Set;
 
 public class HangmanGame {
+    int A_ASCII_VALUE = 65;
+    int Z_ASCII_VALUE = 90;
     private DictionaryManager dictionaryManager;
     public static final Random RANDOM = new Random();
     // Users loses at 6 errors
@@ -64,6 +66,14 @@ public class HangmanGame {
         this.wordFound.set(wordFound);
     }
 
+    public String getWordToFind() {
+        return wordToFind;
+    }
+
+    public void setWordToFind(String wordToFind) {
+        this.wordToFind = wordToFind;
+    }
+
     private String pickRandomWord() {
         Set<String> words = dictionaryManager.getActiveDictWords();
 
@@ -97,7 +107,8 @@ public class HangmanGame {
 
         char[] tmpWordFound = new char[wordToFind.length()];
         for (int i = 0; i < tmpWordFound.length; i++) {
-            tmpWordFound[i] = '_';
+//            tmpWordFound[i] = '_';
+            tmpWordFound[i] = '⏡';
         }
         setWordFound(String.valueOf(tmpWordFound));
     }

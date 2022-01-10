@@ -1,0 +1,11 @@
+
+/** https://www.colorcombos.com/color-schemes/412/ColorCombo412.html */
+
+.root {
+    -fx-background-color: #AB8860;
+}
+
+.labelClass {
+    -fx-text-fill: #DAC582;
+    -fx-font-size: 20;
+}

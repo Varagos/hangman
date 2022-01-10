@@ -9,6 +9,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import org.controlsfx.control.spreadsheet.Grid;
@@ -33,12 +34,14 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws IOException {
         // Create the FXMLLoader
 //        FXMLLoader loader = new FXMLLoader();
-        Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("mainView.fxml"));
 
         Scene scene = new Scene(root, 800, 500);
+        scene.getStylesheets().add(getClass().getResource("Styles.css").toExternalForm());
         // Set the Scene to the Stage
         primaryStage.setScene(scene);
         primaryStage.setTitle("Hangman game");
+        primaryStage.setMaximized(true);
 
         primaryStage.show();
     }
