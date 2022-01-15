@@ -13,6 +13,7 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import org.controlsfx.control.spreadsheet.Grid;
+import org.kordamp.bootstrapfx.BootstrapFX;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -38,6 +39,8 @@ public class Main extends Application {
 
         Scene scene = new Scene(root, 800, 500);
         scene.getStylesheets().add(getClass().getResource("Styles.css").toExternalForm());
+        // import BootstrapFX
+        scene.getStylesheets().add(BootstrapFX.bootstrapFXStylesheet());
         // Set the Scene to the Stage
         primaryStage.setScene(scene);
         primaryStage.setTitle("Hangman game");

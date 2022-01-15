@@ -2,9 +2,8 @@ package com.example.hangman;
 
 import javafx.beans.property.*;
 
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.IntStream;
 
 public class HangmanGame {
     int A_ASCII_VALUE = 65;
@@ -25,6 +24,10 @@ public class HangmanGame {
     private DoubleProperty successPercentage = new SimpleDoubleProperty(this, "successPercentage"
             , 0.00);
     private ArrayList<Character> letters = new ArrayList<Character>();
+    List<Set<Character>> positionLetters = new ArrayList<Set<Character>>();
+    private Set<String> activeWords;
+    // words that we need to count possibilities for each letter
+    private Set<String> wordsSubset;
 
     public HangmanGame(DictionaryManager dictionaryManager) {
         this.dictionaryManager = dictionaryManager;
@@ -74,8 +77,15 @@ public class HangmanGame {
         this.wordToFind = wordToFind;
     }
 
-    private String pickRandomWord() {
-        Set<String> words = dictionaryManager.getActiveDictWords();
+    public List<Set<Character>> getPositionLetters() {
+        return positionLetters;
+    }
+
+    public void setPositionLetters(List<Set<Character>> positionLetters) {
+        this.positionLetters = positionLetters;
+    }
+
+    private String pickRandomWord(Set<String> words) {
 
         int size = words.size();
         int item = RANDOM.nextInt(size); // In real life, the Random object should be
@@ -103,7 +113,14 @@ public class HangmanGame {
         setNbErrors(0);
         attemptNo = 0;
         letters.clear();
-        wordToFind = pickRandomWord();
+
+        activeWords = dictionaryManager.getActiveDictWords();
+        wordToFind = pickRandomWord(activeWords);
+        initializeWordsSubset(activeWords, wordToFind);
+        System.out.println("Subset of words");
+        System.out.println(Arrays.toString(wordsSubset.toArray()));
+        calculateLetterProbabilities(wordsSubset, wordToFind);
+
 
         char[] tmpWordFound = new char[wordToFind.length()];
         for (int i = 0; i < tmpWordFound.length; i++) {
@@ -111,6 +128,72 @@ public class HangmanGame {
             tmpWordFound[i] = '⏡';
         }
         setWordFound(String.valueOf(tmpWordFound));
+        positionLetters = new ArrayList<Set<Character>>();
+        for (int i = 0; i < wordToFind.length(); i++) {
+            positionLetters.add(new HashSet<Character>());
+        }
+    }
+
+    private void initializeWordsSubset(Set<String> words, String ourWord) {
+        wordsSubset = words;
+        for (Iterator<String> i = wordsSubset.iterator(); i.hasNext(); ) {
+            String element = i.next();
+            if (element.length() != ourWord.length() || element == ourWord) {
+                i.remove();
+            }
+        }
+
+    }
+
+    /**
+     * Our data structure will be an array equal to word size
+     * each letter has an object with probabilities and array for each probability
+     * List<Map<String,Integer>> maps = new ArrayList<Map<String,Letter[]>>();
+     * ...
+     * maps.add(new HashMap<String,Integer>());
+     *
+     * @param words
+     * @param ourWord
+     */
+    private void calculateLetterProbabilities(Set<String> words, String ourWord) {
+        List<Map<String, char[]>> maps = new ArrayList<Map<String, char[]>>();
+        // TODO skip found positions
+        for (int i = 0; i < ourWord.length(); i++) {
+            Map probabilities = new HashMap();
+//            maps.add(probabilities);
+            // TODO for all valid letters of this position
+            // count their probability based on other words value
+            // at that position
+            char letter = ourWord.charAt(i);
+
+            Map<Integer, ArrayList<Character>> lettersProbs = new HashMap<>() {{
+                put(Integer.valueOf(5), new ArrayList<>());
+                put(Integer.valueOf(10), new ArrayList<>());
+                put(Integer.valueOf(15), new ArrayList<>());
+                put(Integer.valueOf(30), new ArrayList<>());
+            }};
+            for (int letterAsci = 65; letterAsci <= 90; letterAsci++) {
+                double probability = 0;
+                for (Iterator<String> it = wordsSubset.iterator(); it.hasNext(); ) {
+                    String word = it.next();
+                    if (word.charAt(i) == (char) letterAsci) probability++;
+                }
+//                System.out.println("Probability for position: " + i + " => " + probability);
+                Character letterChar = Character.valueOf((char) letterAsci);
+                double result = probability / wordsSubset.size();
+                if (result >= 0.6) {
+                    lettersProbs.get(Integer.valueOf(5)).add(letterChar);
+                } else if (result >= 0.4) {
+                    lettersProbs.get(Integer.valueOf(10)).add(letterChar);
+                } else if (result >= 0.25) {
+                    lettersProbs.get(Integer.valueOf(15)).add(letterChar);
+                } else {
+                    lettersProbs.get(Integer.valueOf(30)).add(letterChar);
+                }
+            }
+            lettersProbs.forEach((key, value) -> System.out.println(key + ":" + value));
+            System.out.println("END================" + lettersProbs.size());
+        }
     }
 
     /**
@@ -141,46 +224,55 @@ public class HangmanGame {
      * - check if user has entered the letter
      * - check if our word contains the letter
      * - if letter exists replace its underscore
+     * - remove from wordsSubset words that didn't have
+     * in that position the entered letter
      */
-    private void enterLetter(char letter) {
-        if (letters.contains(letter)) return;
+    private boolean enterLetter(int index, char letter) {
+//        if (letters.contains(letter)) return;
+        // has already clicked this letter for this position
+        if (positionLetters.get(index).contains(letter)) {
+            System.out.println("has already clicked this letter for this position");
+            return false;
+        }
 
-        if (wordToFind.contains(String.valueOf(letter))) {
-            int index = wordToFind.indexOf(letter);
-
+        boolean result;
+        if (wordToFind.charAt(index) == letter) {
+            result = true;
             StringBuilder tmpWordFound = new StringBuilder(getWordFound());
-            while (index >= 0) {
-                tmpWordFound.setCharAt(index, letter);
-                index = wordToFind.indexOf(letter, index + 1);
-            }
+            tmpWordFound.setCharAt(index, letter);
             setWordFound(tmpWordFound.toString());
         } else {
+            result = false;
 //            nbErrors++;
             setNbErrors(getNbErrors() + 1);
+
+            // invoke listener on error too
+            setWordFound(getWordFound());
         }
         attemptNo++;
         setSuccessPercentage(100 - (((double) getNbErrors() / attemptNo) * 100));
         System.out.println("Percentage now" + getSuccessPercentage());
         letters.add(letter);
+        positionLetters.get(index).add(letter);
+        return result;
     }
 
     /**
      * Assemble all methods in a play method
-     * - check if number of error < max
-     * - get a letter from the user
+     * gets triggered when user enters a letter
      * - Update the word found with entered letter
      * - Check if word is found, if Yes display win message, else
      * display number of tries remaining
      * - lose message when errors = max
      */
-    public void handleNewLetter(char letter) {
-        enterLetter(letter);
+    public boolean handleNewLetter(int index, char letter) {
+        boolean letterWasCorrect = enterLetter(index, letter);
         // display current state
         System.out.println("\n" + wordFoundContent());
 
         if (gameWon()) {
             System.out.println("\nYou win!");
-            return;
+            return true;
         }
 
         System.out.println("\n=> Nb tries remaining : " + (MAX_ERRORS - getNbErrors()));
@@ -188,6 +280,8 @@ public class HangmanGame {
             // user lost
             System.out.println("\nYou lose!");
             System.out.println("=> Word to find was : " + wordToFind);
+            return false;
         }
+        return letterWasCorrect;
     }
 }

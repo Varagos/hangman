@@ -46,7 +46,7 @@
       </VBox>
    </top>
    <left>
-      <VBox BorderPane.alignment="CENTER">
+      <VBox fx:id="leftVBox" prefHeight="279.0" prefWidth="307.0" BorderPane.alignment="CENTER">
          <children>
             <Label fx:id="wordFound" text="Label" />
             <ImageView fx:id="myImageView" fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
@@ -54,6 +54,10 @@
                   <Image url="@hangman1.png" />
                </image>
             </ImageView>
+            <HBox fx:id="wordContainer" prefHeight="100.0" prefWidth="200.0">
+               <padding>
+                  <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+               </padding></HBox>
          </children>
          <padding>
             <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
@@ -61,17 +65,19 @@
       </VBox>
    </left>
    <bottom>
-      <HBox spacing="10.0" BorderPane.alignment="CENTER">
-         <children>
-            <TextField fx:id="letterTextField" />
-            <Button mnemonicParsing="false" onAction="#handleButtonClick" text="Button" />
-         </children>
+      <HBox fx:id="lowerHBox" prefHeight="85.0" prefWidth="600.0" spacing="10.0" BorderPane.alignment="CENTER">
          <padding>
-            <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
          </padding>
          <BorderPane.margin>
             <Insets />
          </BorderPane.margin>
+         <opaqueInsets>
+            <Insets />
+         </opaqueInsets>
       </HBox>
    </bottom>
+   <right>
+      <VBox fx:id="rightVBox" prefHeight="279.0" prefWidth="361.0" BorderPane.alignment="CENTER" />
+   </right>
 </BorderPane>

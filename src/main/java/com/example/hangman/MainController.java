@@ -14,6 +14,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.Pair;
+import org.kordamp.bootstrapfx.scene.layout.Panel;
 import org.w3c.dom.Node;
 import org.w3c.dom.Text;
 
@@ -21,6 +22,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 public class MainController implements Initializable {
     // variable has same name as id of button, so they're linked
@@ -29,17 +31,21 @@ public class MainController implements Initializable {
     @FXML
     private BorderPane mainBorderPane;
     @FXML
+    private VBox leftVBox;
+    @FXML
+    private HBox lowerHBox;
+    @FXML
+    private HBox wordContainer;
+    @FXML
+    private VBox rightVBox;
+    @FXML
     private Label activeDictionaryLength;
     @FXML
     private Label successPercentage;
     @FXML
     private Label wordFound;
     @FXML
-    private TextField letterTextField;
-    @FXML
     private ImageView myImageView;
-    @FXML
-    private MenuItem createMenuItem;
 
     Image[] myImages = {
             new Image(getClass().getResourceAsStream("hangman1.png")),
@@ -52,12 +58,6 @@ public class MainController implements Initializable {
 
     private HangmanGame hangmanGame;
     private DictionaryManager dictionaryManager;
-
-    public void handleButtonClick(ActionEvent event) {
-        String str = letterTextField.getText();
-        letterTextField.clear();
-        hangmanGame.handleNewLetter(str.charAt(0));
-    }
 
     private void endGameAlert() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -79,7 +79,7 @@ public class MainController implements Initializable {
             return;
         }
         hangmanGame.newGame();
-        populateRightGridPane();
+//        populateRightGridPane();
     }
 
     /*
@@ -131,6 +131,137 @@ public class MainController implements Initializable {
         Platform.exit();
         System.exit(0);
     }
+
+    private void populateRightGridPane(int letterIndex) {
+        String wordToFind = hangmanGame.getWordToFind();
+        Label letter = new Label("letter index" + letterIndex);
+        rightVBox.getChildren().setAll(letter);
+
+        Panel panel = new Panel("This is the title");
+        panel.getStyleClass().add("panel-primary");                            //(2)
+        Stage root = (Stage) mainBorderPane.getScene().getWindow();
+        rightVBox.setPrefWidth(root.getWidth() / 2);
+        rightVBox.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+        rightVBox.setStyle("-fx-border-color: black");
+
+//        mainBorderPane.setRight(panel);
+
+//        gridpane.setPrefSize(2000, 2000); // Default width and height
+//        gridpane.setPrefWidth(mainBorderPane.widthProperty().getValue());
+//        gridpane.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+    }
+
+    private void updateWordToggleButtons(String newWordFound) {
+        final ToggleGroup group = new ToggleGroup();
+        ToggleButton[] letterButtons = new ToggleButton[newWordFound.length()];
+        for (int i = 0; i < newWordFound.length(); i++) {
+            letterButtons[i] = new ToggleButton(newWordFound.substring(i, i + 1));
+            letterButtons[i].setMinSize(Button.USE_PREF_SIZE, Button.USE_PREF_SIZE);
+            letterButtons[i].getStyleClass().setAll("btn", "btn-warning");
+            //btn, btn-primary, first
+            letterButtons[i].setToggleGroup(group);
+            if (newWordFound.charAt(i) != '⏡') {
+                letterButtons[i].setDisable(true);
+            }
+        }
+//        wordContainer.getChildren().clear();
+//        wordContainer.getChildren().addAll(letterButtons);
+        wordContainer.getChildren().setAll(letterButtons);
+        wordContainer.getStyleClass().setAll("btn-group-horizontal");
+        group.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            int index = group.getToggles().indexOf(group.getSelectedToggle());
+            System.out.println("index clicked!: " + index);
+            if (index == -1) {
+                lowerHBox.getChildren().clear();
+                System.out.println("toggle group unselected");
+            } else {
+                populateButtonForm(index);
+                populateRightGridPane(index);
+            }
+        });
+
+    }
+
+    private void populateButtonForm(final int letterIndex) {
+        List<Set<Character>> positionLetters = hangmanGame.getPositionLetters();
+        Set positionEnteredLetters = positionLetters.get(letterIndex);
+        FlowPane flow = new FlowPane();
+        flow.setAlignment(Pos.CENTER);
+        flow.setVgap(8);
+        flow.setHgap(4);
+        flow.setPrefWrapLength(300); // preferred width = 300
+        for (int letterAsci = 65; letterAsci <= 90; letterAsci++) {
+            Button letterButton = new Button(" " + (char) letterAsci + "");
+            letterButton.getStyleClass().setAll("btn", "btn-danger", "btn-sm");                     //(2)
+            flow.getChildren().add(letterButton);
+            char finalLetterAscii = (char) letterAsci;
+            if (positionEnteredLetters.contains((char) letterAsci)) {
+                letterButton.setDisable(true);
+            } else {
+                setFormLetterListener(letterButton, letterIndex, finalLetterAscii);
+            }
+        }
+        lowerHBox.getChildren().clear();
+        lowerHBox.getChildren().add(flow);
+
+    }
+
+    private void setFormLetterListener(Button letterButton, int letterIndex, char letterValue) {
+        letterButton.setOnAction(e -> {
+            System.out.println("Clicked column: " + letterIndex + ", and letter: " + letterValue);
+            boolean result = hangmanGame.handleNewLetter(letterIndex, letterValue);
+            if (result == true) lowerHBox.getChildren().clear();
+            // disable buutton based on result instead of rerender all buttons?
+//          myButton.setEnabled(false);
+        });
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        // runs after view loads,
+        System.out.println("Loading user data...");
+        System.out.println("Initializing game...");
+        dictionaryManager = new DictionaryManager();
+        hangmanGame = new HangmanGame(dictionaryManager);
+        activeDictionaryLength.textProperty().bind(
+                Bindings.concat("Words in active dictionary ")
+                        .concat(dictionaryManager.activeDictionaryLengthProperty().asString())
+        );
+        wordFound.textProperty().bind(hangmanGame.wordFoundProperty());
+        wordFound.textProperty().addListener((o, oldValue, newValue) -> {
+            System.out.println("wordFound event listener triggered");
+            System.out.println("newValue " + newValue);
+            updateWordToggleButtons(newValue);
+        });
+        successPercentage.setText("dummy");
+        successPercentage.textProperty().bind(hangmanGame.successPercentageProperty().asString());
+        hangmanGame.nbErrorsProperty().addListener((v, oldValue, newValue) -> {
+            System.out.println("newValue " + newValue.toString());
+            int index = newValue.intValue() - 1;
+            myImageView.setImage(myImages[index]);
+            if (newValue.intValue() == 6) {
+                endGameAlert();
+            }
+        });
+
+//        final ToggleGroup group = new ToggleGroup();
+//        group.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+////            System.out.println("observable" + observable);
+////            System.out.println("oldValue" + oldValue.toString());
+////            System.out.println("newValue" + newValue.toString());
+//            int index = group.getToggles().indexOf(group.getSelectedToggle());
+//            System.out.println("index clicked!: " + index);
+//            populateButtonForm(index);
+//        });
+
+//        wordContainer.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+    }
+    /**
+     * TODO add change listener on letter string property
+     */
+}
+
+/*
 
     private void populateRightGridPane() {
         String wordToFind = hangmanGame.getWordToFind();
@@ -192,51 +323,25 @@ public class MainController implements Initializable {
                 int finalI = i;
                 int finalLetterAsci = letterAsci;
                 letterButton.setOnAction(e -> {
-                    System.out.println("Clicked column: " + finalI + ", and letter: " + (char) finalLetterAsci);
+                    System.out.println("Clicked column: " + finalI + ", and letter: " + (char)
+                    finalLetterAsci);
                 });
             }
             gridpane.add(flow, i, 1);
         }
-//        gridpane.getColumnConstraints().addAll(col1, col2, col3);
-
-//        gridpane.addColumn(0, new Button("col 1"));
-//        gridpane.addColumn(1, new Button("col 2"));
-//        gridpane.addColumn(2, new Button("col 3"));
 
         Insets insets = new Insets(0, 20, 0, 20);
         BorderPane.setMargin(gridpane, insets);
         gridpane.setStyle("-fx-background-color: #D8BFD8;");
-        mainBorderPane.setRight(gridpane);
+        // sets right child of borderPane
+//        mainBorderPane.setRight(gridpane);
+        Panel panel = new Panel("This is the title");
+        panel.getStyleClass().add("panel-primary");                            //(2)
+        mainBorderPane.setRight(panel);
+
 
         gridpane.setPrefSize(2000, 2000); // Default width and height
 //        gridpane.setPrefWidth(mainBorderPane.widthProperty().getValue());
         gridpane.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
     }
-
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
-        // runs after view loads,
-        System.out.println("Loading user data...");
-        System.out.println("Initializing game...");
-        dictionaryManager = new DictionaryManager();
-        hangmanGame = new HangmanGame(dictionaryManager);
-//        hangmanGame.newGame();
-//        Remaining words in dictionary:3
-        activeDictionaryLength.textProperty().bind(
-                Bindings.concat("Words in active dictionary ")
-                        .concat(dictionaryManager.activeDictionaryLengthProperty().asString())
-        );
-        wordFound.textProperty().bind(hangmanGame.wordFoundProperty());
-//        hangmanGame.play();
-        successPercentage.setText("dummy");
-        successPercentage.textProperty().bind(hangmanGame.successPercentageProperty().asString());
-        hangmanGame.nbErrorsProperty().addListener((v, oldValue, newValue) -> {
-            System.out.println("newValue " + newValue.toString());
-            int index = newValue.intValue() - 1;
-            myImageView.setImage(myImages[index]);
-            if (newValue.intValue() == 6) {
-                endGameAlert();
-            }
-        });
-    }
-}
+ */
