@@ -11,7 +11,6 @@ import java.util.*;
 
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.StringProperty;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -59,6 +58,11 @@ public class DictionaryManager {
     }
 
 
+    /**
+     * Reads local directory for saved dictionaries
+     *
+     * @return list of dictionary names
+     */
     public List<String> getDictionaryChoices() {
 
         List<String> choices = new ArrayList<>();
@@ -85,6 +89,12 @@ public class DictionaryManager {
         return this.activeDictionary;
     }
 
+    /**
+     * Reads the dictionary from local directory
+     * and sets it as active
+     *
+     * @param dictionaryId
+     */
     public void setActiveDictionary(String dictionaryId) {
         activeDictWords.clear();
         setActiveDictionaryLength(0);
@@ -125,7 +135,12 @@ public class DictionaryManager {
         this.activeDictWords = activeDictWords;
     }
 
-    // async
+    /**
+     * Fetches book description from openlibrary.org/works API
+     *
+     * @param bookId
+     * @return value description of parsed Json
+     */
     public String fetchBookDescription(String bookId) {
         String queryParams = "?format=json";
         String url = "https://openlibrary.org/works/" + bookId + ".json" + queryParams;

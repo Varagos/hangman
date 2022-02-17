@@ -2,11 +2,8 @@ package com.example.hangman;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.HPos;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -15,14 +12,10 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 import org.kordamp.bootstrapfx.scene.layout.Panel;
-import org.w3c.dom.Node;
-import org.w3c.dom.Text;
 
 import java.net.URL;
-import java.util.List;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class MainController implements Initializable {
     // variable has same name as id of button, so they're linked
@@ -40,6 +33,8 @@ public class MainController implements Initializable {
     private VBox rightVBox;
     @FXML
     private Label activeDictionaryLength;
+    @FXML
+    private Label gameTotalPoints;
     @FXML
     private Label successPercentage;
     @FXML
@@ -132,17 +127,77 @@ public class MainController implements Initializable {
         System.exit(0);
     }
 
+    /**
+     * A popup shows for active dictionary,
+     * percentage of words with 6, 7-9 and 10+ words
+     */
+    @FXML
+    private void showDictionaryDetails() {
+        System.out.println("showDictionaryDetails");
+        DictionaryDialog.display(dictionaryManager);
+    }
+
+    /**
+     * A popup shows for last 5 finished games,
+     * selected word, number of tries,
+     * and winner (computer or human)
+     */
+    @FXML
+    private void showLastRoundsInfo() {
+        System.out.println("showLastRoundsInfo");
+        RoundsDialog.display(this.hangmanGame);
+    }
+
+    /**
+     * Game is registered as lost, and word is reveled
+     */
+    @FXML
+    private void solveGame() {
+        System.out.println("solveGame");
+    }
+
     private void populateRightGridPane(int letterIndex) {
         String wordToFind = hangmanGame.getWordToFind();
         Label letter = new Label("letter index" + letterIndex);
         rightVBox.getChildren().setAll(letter);
 
-        Panel panel = new Panel("This is the title");
-        panel.getStyleClass().add("panel-primary");                            //(2)
+//        Panel panel = new Panel("This is the title");
+//        panel.getStyleClass().add("panel-primary");                            //(2)
         Stage root = (Stage) mainBorderPane.getScene().getWindow();
         rightVBox.setPrefWidth(root.getWidth() / 2);
         rightVBox.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
         rightVBox.setStyle("-fx-border-color: black");
+
+        // TODO Calculate view lists on word change event and not on letter click listener
+        // (pre-calculate)
+        List<Map<Integer, ArrayList<Character>>> indexLetterProbs =
+                hangmanGame.getPositionLetterProbs();
+        Map<Integer, ArrayList<Character>> currentIndexLetterProbs =
+                indexLetterProbs.get(letterIndex);
+        if (currentIndexLetterProbs == null) {
+            System.out.println("ERROR null map for index:" + letterIndex);
+            return;
+        }
+        List<Integer> pointKeys =
+                currentIndexLetterProbs.keySet().stream().collect(Collectors.toList());
+        Collections.sort(pointKeys);
+
+        for (Integer points : pointKeys) {
+            List<Character> pointChars = currentIndexLetterProbs.get(points);
+//            System.out.println("Key = " + entry.getKey() +
+//                    ", Value = " + entry.getValue());
+            Panel panel = new Panel(points + " Points letters");
+            panel.getStyleClass().add("panel-primary");                            //(2)
+            FlowPane panelBody = new FlowPane();
+            for (Character pointsLetter : pointChars) {
+                Label letterLabel = new Label(String.valueOf(pointsLetter));
+                letterLabel.getStyleClass().setAll("lbl", "lbl-info", "p");
+                panelBody.getChildren().add(letterLabel);
+            }
+            panel.setBody(panelBody);
+            rightVBox.getChildren().add(panel);
+        }
+
 
 //        mainBorderPane.setRight(panel);
 
@@ -183,7 +238,7 @@ public class MainController implements Initializable {
     }
 
     private void populateButtonForm(final int letterIndex) {
-        List<Set<Character>> positionLetters = hangmanGame.getPositionLetters();
+        List<Set<Character>> positionLetters = hangmanGame.getPositionEnteredLetters();
         Set positionEnteredLetters = positionLetters.get(letterIndex);
         FlowPane flow = new FlowPane();
         flow.setAlignment(Pos.CENTER);
@@ -227,6 +282,10 @@ public class MainController implements Initializable {
                 Bindings.concat("Words in active dictionary ")
                         .concat(dictionaryManager.activeDictionaryLengthProperty().asString())
         );
+        gameTotalPoints.textProperty().bind(
+                Bindings.concat("Total points ")
+                        .concat(hangmanGame.totalPointsProperty().asString())
+        );
         wordFound.textProperty().bind(hangmanGame.wordFoundProperty());
         wordFound.textProperty().addListener((o, oldValue, newValue) -> {
             System.out.println("wordFound event listener triggered");
@@ -234,7 +293,10 @@ public class MainController implements Initializable {
             updateWordToggleButtons(newValue);
         });
         successPercentage.setText("dummy");
-        successPercentage.textProperty().bind(hangmanGame.successPercentageProperty().asString());
+        successPercentage.textProperty().bind(
+
+                Bindings.concat("Success Percentage ")
+                        .concat(Bindings.format("%.2f", hangmanGame.successPercentageProperty())));
         hangmanGame.nbErrorsProperty().addListener((v, oldValue, newValue) -> {
             System.out.println("newValue " + newValue.toString());
             int index = newValue.intValue() - 1;
@@ -243,105 +305,8 @@ public class MainController implements Initializable {
                 endGameAlert();
             }
         });
-
-//        final ToggleGroup group = new ToggleGroup();
-//        group.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-////            System.out.println("observable" + observable);
-////            System.out.println("oldValue" + oldValue.toString());
-////            System.out.println("newValue" + newValue.toString());
-//            int index = group.getToggles().indexOf(group.getSelectedToggle());
-//            System.out.println("index clicked!: " + index);
-//            populateButtonForm(index);
-//        });
-
-//        wordContainer.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
     }
     /**
      * TODO add change listener on letter string property
      */
 }
-
-/*
-
-    private void populateRightGridPane() {
-        String wordToFind = hangmanGame.getWordToFind();
-//        rightGridPane.setPadding(new Insets(10, 10, 10, 10));
-//        rightGridPane.setMinSize(300, 300);
-//        rightGridPane.setVgap(5);
-//        rightGridPane.setHgap(5);
-//        for (int i = 0, n = wordToFind.length(); i < n; i++) {
-//            char letter = wordToFind.charAt(i);
-//            Label letterLabel = new Label(" " + letter + " ");
-//            letterLabel.setMinWidth(Region.USE_PREF_SIZE);
-//
-//            rightGridPane.add(letterLabel, i, 0);
-//            System.out.println("Letter" + letter);
-//        }
-
-//        ColumnConstraints col1 = new ColumnConstraints();
-//        col1.setHgrow(Priority.ALWAYS);
-//
-//        ColumnConstraints col2 = new ColumnConstraints();
-//        col2.setHgrow(Priority.ALWAYS);
-
-//        rightGridPane.getColumnConstraints().addAll(new ColumnConstraints(60), col1,
-//                new ColumnConstraints(100), col2);
-//
-//        rightGridPane.addColumn(0, new Button("col 1"));
-//        rightGridPane.addColumn(1, new Button("col 2"));
-//        rightGridPane.addColumn(2, new Button("col 3"));
-//        rightGridPane.addColumn(3, new Button("col 4"));
-        GridPane gridpane = new GridPane();
-        int percentage = 100 / wordToFind.length();
-        gridpane.setGridLinesVisible(true);
-//        ColumnConstraints col1 = new ColumnConstraints();
-//        col1.setPercentWidth(25);
-//        ColumnConstraints col2 = new ColumnConstraints();
-//        col2.setPercentWidth(50);
-//        ColumnConstraints col3 = new ColumnConstraints();
-//        col3.setPercentWidth(25);
-
-        for (int i = 0, n = wordToFind.length(); i < n; i++) {
-            char letter = wordToFind.charAt(i);
-            ColumnConstraints col1 = new ColumnConstraints();
-            col1.setPercentWidth(percentage);
-
-            gridpane.getColumnConstraints().add(col1);
-
-            Button button = new Button(String.valueOf(letter));
-            gridpane.addColumn(i, button);
-            gridpane.setHalignment(button, HPos.CENTER);
-
-            FlowPane flow = new FlowPane();
-            flow.setAlignment(Pos.CENTER);
-            flow.setVgap(8);
-            flow.setHgap(4);
-            flow.setPrefWrapLength(300); // preferred width = 300
-            for (int letterAsci = 65; letterAsci <= 90; letterAsci++) {
-                Button letterButton = new Button(" " + (char) letterAsci + "");
-                flow.getChildren().add(letterButton);
-                int finalI = i;
-                int finalLetterAsci = letterAsci;
-                letterButton.setOnAction(e -> {
-                    System.out.println("Clicked column: " + finalI + ", and letter: " + (char)
-                    finalLetterAsci);
-                });
-            }
-            gridpane.add(flow, i, 1);
-        }
-
-        Insets insets = new Insets(0, 20, 0, 20);
-        BorderPane.setMargin(gridpane, insets);
-        gridpane.setStyle("-fx-background-color: #D8BFD8;");
-        // sets right child of borderPane
-//        mainBorderPane.setRight(gridpane);
-        Panel panel = new Panel("This is the title");
-        panel.getStyleClass().add("panel-primary");                            //(2)
-        mainBorderPane.setRight(panel);
-
-
-        gridpane.setPrefSize(2000, 2000); // Default width and height
-//        gridpane.setPrefWidth(mainBorderPane.widthProperty().getValue());
-        gridpane.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
-    }
- */

@@ -23,9 +23,9 @@
                 </Menu>
                 <Menu mnemonicParsing="false" text="Details">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="Dictionary" />
-                        <MenuItem mnemonicParsing="false" text="Rounds" />
-                        <MenuItem mnemonicParsing="false" text="Solution" />
+                    <MenuItem fx:id="dictionaryMenuItem" mnemonicParsing="false" onAction="#showDictionaryDetails" text="Dictionary" />
+                        <MenuItem fx:id="roundMenuItem" mnemonicParsing="false" onAction="#showLastRoundsInfo" text="Rounds" />
+                        <MenuItem fx:id="solutionMenuItem" mnemonicParsing="false" onAction="#solveGame" text="Solution" />
                   </items>
                 </Menu>
               </menus>
@@ -34,7 +34,7 @@
                <children>
                   <Label fx:id="activeDictionaryLength" styleClass="labelClass" text="Remaining words in dictionary:3" />
                   <Region HBox.hgrow="ALWAYS" />
-                  <Label layoutX="10.0" layoutY="10.0" text="Total points: 55" />
+                  <Label fx:id="gameTotalPoints" layoutX="10.0" layoutY="10.0" text="Total points: 55" />
                   <Region HBox.hgrow="ALWAYS" />
                   <Label fx:id="successPercentage" layoutX="183.0" layoutY="10.0" text="Correct letter percenage: 92%" />
                </children>
