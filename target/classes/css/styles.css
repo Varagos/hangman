@@ -1,0 +1,30 @@
+
+/** https://www.colorcombos.com/color-schemes/412/ColorCombo412.html */
+
+.root {
+    -fx-background-color: #AB8860;
+}
+
+.topSectionLabel {
+    -fx-text-fill: #DAC582;
+    -fx-font-size: 20;
+}
+
+.tries-remaining {
+    -fx-text-fill: #DAC582;
+    -fx-font-weight: bold;
+    -fx-font-size: 16;
+}
+
+.letters-form-grid {
+    -fx-border-color: #D1D1D1;
+    -fx-border-width: 20 2 1 2;
+    -fx-border-style: solid;
+    -fx-background-color: #C0A080;
+    -fx-padding: 10 20 10 20;
+}
+
+.form-button {
+    -fx-background-color: grey;
+    -fx-background-color: yellow;
+}

@@ -11,6 +11,10 @@ module com.example.hangman {
     requires java.net.http;
     requires org.json;
 
-    opens com.example.hangman to javafx.fxml;
-    exports com.example.hangman;
+    exports controllers;
+    opens controllers to javafx.fxml;
+    exports application;
+    opens application to javafx.fxml;
+    exports ui;
+    opens ui to javafx.fxml;
 }
