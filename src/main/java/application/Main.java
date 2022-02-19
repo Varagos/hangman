@@ -6,6 +6,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.kordamp.bootstrapfx.BootstrapFX;
 
@@ -29,6 +30,8 @@ public class Main extends Application {
 
         MainController controller = loader.getController();
         controller.setStageAndSetupListeners(primaryStage);
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/images/download" +
+                ".png")));
 
         Scene scene = new Scene(root, 800, 500);
         scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
@@ -36,7 +39,7 @@ public class Main extends Application {
         scene.getStylesheets().add(BootstrapFX.bootstrapFXStylesheet());
         // Set the Scene to the Stage
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Hangman game");
+        primaryStage.setTitle("Medialab Hangman");
         primaryStage.setMaximized(true);
 
         primaryStage.show();

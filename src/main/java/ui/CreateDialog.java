@@ -1,22 +1,19 @@
 package ui;
 
 import javafx.application.Platform;
-import javafx.event.EventHandler;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
-import javafx.stage.Window;
-import javafx.stage.WindowEvent;
 import javafx.util.Pair;
 
 import java.util.Optional;
 
 public class CreateDialog {
 
-    // https://code.makery.ch/blog/javafx-dialogs-official/
     public static Optional<Pair<String, String>> display(Stage parent) {
         Dialog<Pair<String, String>> dialog = new Dialog<>();
 
@@ -33,7 +30,7 @@ public class CreateDialog {
         TextField dictionaryId = new TextField();
         dictionaryId.setPromptText("Dictionary id");
         TextField openLibraryId = new TextField();
-        openLibraryId.setPromptText("Password");
+        openLibraryId.setPromptText("Open Library ID");
 
         grid.add(new Label("DICTIONARY-ID:"), 0, 0);
         grid.add(dictionaryId, 1, 0);
@@ -44,10 +41,9 @@ public class CreateDialog {
         Node createButton = dialog.getDialogPane().lookupButton(createButtonType);
         createButton.setDisable(true);
 
-        // Do some validation (using the Java 8 lambda syntax).
-        dictionaryId.textProperty().addListener((observable, oldValue, newValue) -> {
-            createButton.setDisable(newValue.trim().isEmpty());
-        });
+        // Do some validation
+        createButton.disableProperty().bind(Bindings.or(dictionaryId.textProperty().isEmpty(),
+                openLibraryId.textProperty().isEmpty()));
         dialog.getDialogPane().setContent(grid);
 
         // Request focus on the username field by default.
@@ -64,9 +60,5 @@ public class CreateDialog {
         Optional<Pair<String, String>> result = dialog.showAndWait();
         return result;
 
-//        result.ifPresent(usernamePassword -> {
-//            System.out.println("Dictionary ID=" + usernamePassword.getKey() + ", Open Library
-//            Id=" + usernamePassword.getValue());
-//        });
     }
 }

@@ -16,6 +16,14 @@ import javafx.beans.property.SimpleIntegerProperty;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * A service for managing dictionaries
+ * that are retrieved from OpenLibrary API
+ *
+ * @author Markos Girgis
+ * @version 1.5
+ * @since 1.0
+ */
 public class DictionaryManager {
     private final String DICT_DIRECTORY = "medialab";
     private String activeDictionary = null;
@@ -29,11 +37,17 @@ public class DictionaryManager {
 
     private Set<String> activeDictWords = new HashSet<>();
 
+    /**
+     * A flag showing whether a dictionary
+     * has been loaded yet or not
+     *
+     * @return boolean simple property
+     */
     public BooleanProperty dictionaryLoadedProperty() {
         return dictionaryLoaded;
     }
 
-    public void setDictionaryLoaded(boolean dictionaryLoaded) {
+    private void setDictionaryLoaded(boolean dictionaryLoaded) {
         this.dictionaryLoaded.set(dictionaryLoaded);
     }
 
@@ -49,10 +63,8 @@ public class DictionaryManager {
      */
     public void createDictionary(String dictionaryId, String openLibraryId) throws
             UndersizeException, UnbalancedException {
-//    throw new InvalidCountException("3 words founds");  //
         String description = fetchBookDescription(openLibraryId);
-//        System.out.println("result is" + description);
-        if (description == null) throw new Error("description key is missing");
+        if (description == null) throw new Error("Description key is missing in API response");
         Set<String> words = parseDescription(description);
         System.out.println(words);
         int dictSize = words.size();
@@ -96,6 +108,9 @@ public class DictionaryManager {
         return choices;
     }
 
+    /**
+     * @return the name of the active Dictionary
+     */
     public String getActiveDictionary() {
         return this.activeDictionary;
     }
@@ -104,7 +119,8 @@ public class DictionaryManager {
      * Reads the dictionary from local directory
      * and sets it as active
      *
-     * @param dictionaryId
+     * @param dictionaryId the identifier of the dictionary
+     *                     that we wish to set as active
      */
     public void setActiveDictionary(String dictionaryId) {
         activeDictWords.clear();
@@ -127,30 +143,31 @@ public class DictionaryManager {
         this.setDictionaryLoaded(true);
     }
 
-    public int getActiveDictionaryLength() {
-        return activeDictionaryLength.get();
-    }
-
+    /**
+     * @return the number of words in the current
+     * active dictionary
+     */
     public IntegerProperty activeDictionaryLengthProperty() {
         return activeDictionaryLength;
     }
 
-    public void setActiveDictionaryLength(int activeDictionaryLength) {
+    private void setActiveDictionaryLength(int activeDictionaryLength) {
         this.activeDictionaryLength.set(activeDictionaryLength);
     }
 
+    /**
+     * @return all the words in the current
+     * active dictionary
+     */
     public Set<String> getActiveDictWords() {
         return activeDictWords;
-    }
-
-    private void setActiveDictWords(Set<String> activeDictWords) {
-        this.activeDictWords = activeDictWords;
     }
 
     /**
      * Fetches book description from openlibrary.org/works API
      *
-     * @param bookId
+     * @param bookId the openLibraryId for the desired book
+     *               e.g. OL45883W
      * @return value description of parsed Json
      */
     public String fetchBookDescription(String bookId) {
@@ -186,8 +203,7 @@ public class DictionaryManager {
         return response;
     }
 
-    // 3rd party library to parse json
-    public static String parseJson(String responseBody) {
+    private static String parseJson(String responseBody) {
         System.out.println("responseBody" + responseBody);
         try {
             JSONObject work = new JSONObject(responseBody);
@@ -239,14 +255,5 @@ public class DictionaryManager {
             System.out.println("An error occurred.");
             e.printStackTrace();
         }
-    }
-
-    public static void main(String[] args) {
-        DictionaryManager dictionaryManager = new DictionaryManager();
-        // here description is raw text
-        String description = dictionaryManager.fetchBookDescription("OL45883W");
-        // here it's object with value property
-        // OL31390631M
-        System.out.println("result is" + description);
     }
 }

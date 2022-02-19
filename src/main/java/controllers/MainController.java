@@ -139,6 +139,8 @@ public class MainController implements Initializable {
             } catch (Exception ex) {
                 ex.printStackTrace();
                 ExceptionDialog.display(ex);
+            } catch (Error e) {
+                ErrorDialog.display("Unexpected Error", e.getMessage());
             }
         });
     }
