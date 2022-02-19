@@ -20,7 +20,7 @@ public class RoundsDialog {
         alert.setHeaderText("Last 5 Games");
 
         Label col1 = new Label("word");
-        Label col2 = new Label("number of tries");
+        Label col2 = new Label("number of errors");
         Label col3 = new Label("winner");
         col1.getStyleClass().setAll("lbl", "lbl-default", "h1");
         col2.getStyleClass().setAll("lbl", "lbl-default", "h1");
@@ -55,7 +55,6 @@ public class RoundsDialog {
             word.getStyleClass().setAll("lbl", "lbl-info", "h3");
             numberOfTries.getStyleClass().setAll("lbl", "lbl-info", "h3");
             winner.getStyleClass().setAll("lbl", "lbl-info", "h3");
-            System.out.println(lastGames.get(num));
             gridPane.add(word, 0, num + 1);
             gridPane.add(numberOfTries, 1, num + 1);
             gridPane.add(winner, 2, num + 1);

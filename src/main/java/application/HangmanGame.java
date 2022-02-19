@@ -25,7 +25,6 @@ public class HangmanGame {
     private DoubleProperty successPercentage = new SimpleDoubleProperty(this, "successPercentage"
             , 0.00);
     List<Set<Character>> positionEnteredLetters;
-    private Set<String> activeWords;
     // words that we need to count possibilities for each letter
     private Set<String> wordsSubset;
 
@@ -34,6 +33,15 @@ public class HangmanGame {
     private IntegerProperty totalPoints = new SimpleIntegerProperty(this, "totalPoints", 0);
 
     private LinkedList<GameResult> last5Games = new LinkedList();
+
+    public static enum STATE {
+        IDLE,
+        GAME_WON,
+        GAME_LOST,
+        PLAYING
+    }
+
+    private ObjectProperty<STATE> appState = new SimpleObjectProperty(STATE.IDLE);
 
 
     public HangmanGame(DictionaryManager dictionaryManager) {
@@ -105,8 +113,21 @@ public class HangmanGame {
         return last5Games;
     }
 
+    public STATE getAppState() {
+        return appState.get();
+    }
+
+    public ObjectProperty<STATE> appStateProperty() {
+        return appState;
+    }
+
+    public void setAppState(STATE appState) {
+        this.appState.set(appState);
+    }
+
     private String pickRandomWord(Set<String> words) {
         int size = words.size();
+        if (size == 0) throw new Error("Zero active words");
         int item = RANDOM.nextInt(size);
         int i = 0;
         for (String word : words) {
@@ -128,19 +149,25 @@ public class HangmanGame {
      * (letters are represented with an underscore '_'
      */
     public void newGame() {
-        setNbErrors(0);
-        attemptNo = 0;
+        this.setNbErrors(0);
+        this.setTotalPoints(0);
+        this.setSuccessPercentage(0.00);
+        setAppState(STATE.PLAYING);
+        this.attemptNo = 0;
 //        letters.clear();
 
-        activeWords = dictionaryManager.getActiveDictWords();
+        Set<String> activeWords = dictionaryManager.getActiveDictWords();
+        // copy set object, because we mutate it down the line
+
         wordToFind = pickRandomWord(activeWords);
         initializeWordsSubset(activeWords, wordToFind);
-        System.out.println("Subset of words");
-        System.out.println(Arrays.toString(wordsSubset.toArray()));
+//        System.out.println("Subset of words");
+//        System.out.println(Arrays.toString(wordsSubset.toArray()));
 
 
         char[] tmpWordFound = new char[wordToFind.length()];
         Arrays.fill(tmpWordFound, '⏡'); // '_';
+        System.out.println("Setting wordFound for new game: " + String.valueOf(tmpWordFound));
         setWordFound(String.valueOf(tmpWordFound));
         positionEnteredLetters = new ArrayList<>();
         for (int i = 0; i < wordToFind.length(); i++) {
@@ -150,9 +177,11 @@ public class HangmanGame {
         calculateLetterProbabilities(wordsSubset, String.valueOf(tmpWordFound));
     }
 
-    private void initializeWordsSubset(Set<String> words, String ourWord) {
-        wordsSubset = words;
-        wordsSubset.removeIf(element -> element.length() != ourWord.length() || element.equals(ourWord));
+    private void initializeWordsSubset(Set<String> activeWords, String ourWord) {
+        // copy original set
+        Set<String> copy = new HashSet<>(activeWords);
+        copy.removeIf(element -> element.length() != ourWord.length() || element.equals(ourWord));
+        this.wordsSubset = copy;
     }
 
     /**
@@ -209,8 +238,8 @@ public class HangmanGame {
                     lettersProbs.get(30).add(letter);
                 }
             }
-            lettersProbs.forEach((key, value) -> System.out.println(key + ":" + value));
-            System.out.println("END================" + lettersProbs.size());
+//            lettersProbs.forEach((key, value) -> System.out.println(key + ":" + value));
+//            System.out.println("END================" + lettersProbs.size());
             maps.add(lettersProbs);
         }
         this.positionLetterProbs = maps;
@@ -221,6 +250,10 @@ public class HangmanGame {
      */
     public boolean gameWon() {
         return wordToFind.contentEquals(getWordFound());
+    }
+
+    public boolean gameLost() {
+        return getNbErrors() == MAX_ERRORS;
     }
 
     /**
@@ -264,8 +297,8 @@ public class HangmanGame {
             result = false;
             this.handleWrongLetter(index, letter);
         }
-        attemptNo++;
-        setSuccessPercentage(100 - (((double) getNbErrors() / attemptNo) * 100));
+        this.attemptNo++;
+        setSuccessPercentage(100 - (((double) getNbErrors() / this.attemptNo) * 100));
         System.out.println("Percentage now" + getSuccessPercentage());
         return result;
     }
@@ -309,14 +342,15 @@ public class HangmanGame {
         setTotalPoints(totalPoints);
         // invoke listener on error too
         // Kick off listeners on wordFound after new probabilities are correctly set
+        // TODO make sure listeners gets kicked (value hasn't changed)
         setWordFound(getWordFound());
     }
 
     private Integer findLetterPoints(int index, Character letter) {
         Map<Integer, ArrayList<Character>> indexLetters = positionLetterProbs.get(index);
         for (Map.Entry<Integer, ArrayList<Character>> entry : indexLetters.entrySet()) {
-            System.out.println("Key = " + entry.getKey() +
-                    ", Value = " + entry.getValue());
+//            System.out.println("Key = " + entry.getKey() +
+//                    ", Value = " + entry.getValue());
             if (entry.getValue().contains(letter)) {
                 return entry.getKey();
             }
@@ -336,49 +370,46 @@ public class HangmanGame {
         boolean letterWasCorrect = enterLetter(index, letter);
         // display current state
         System.out.println("\n" + wordFoundContent());
-
-        if (gameWon()) {
-            System.out.println("\nYou win!");
-            this.handleVictory();
-            this.endGame();
-            return true;
-        }
+//
+//        if (gameWon()) {
+//            System.out.println("\nYou win!");
+//            this.endGame(STATE.GAME_WON);
+//            return true;
+//        }
 
         System.out.println("\n=> Nb tries remaining : " + (MAX_ERRORS - getNbErrors()));
-        if (getNbErrors() == MAX_ERRORS) {
-            // user lost
-            System.out.println("\nYou lose!");
-            System.out.println("=> Word to find was : " + wordToFind);
-            this.handleDefeat();
-            this.endGame();
-            return false;
-        }
+//        if (getNbErrors() == MAX_ERRORS) {
+//            // user lost
+//            System.out.println("\nYou lose!");
+//            System.out.println("=> Word to find was : " + wordToFind);
+//            this.endGame(STATE.GAME_LOST);
+//            return false;
+//        }
         return letterWasCorrect;
     }
 
-    private void handleVictory() {
-        GameResult victory = new GameResult(this.wordToFind, getNbErrors(),
-                GameResult.Winner.HUMAN);
-        this.last5Games.add(victory);
-        if (this.last5Games.size() > 5) this.last5Games.removeFirst();
-    }
-
-    private void handleDefeat() {
-        GameResult defeat = new GameResult(this.wordToFind, getNbErrors(),
-                GameResult.Winner.COMPUTER);
-
-        this.last5Games.add(defeat);
-        if (this.last5Games.size() > 5) this.last5Games.removeFirst();
+    public void surrenderGame() {
+        this.endGame(STATE.GAME_LOST);
     }
 
     /**
      * TODO reload game state on end
      * clear errors, points, success percentage, wordToFind
      */
-    private void endGame() {
-        this.setNbErrors(0);
-        this.setTotalPoints(0);
-        this.setSuccessPercentage(0.00);
-        this.wordToFind = null;
+    public void endGame(STATE state) {
+        GameResult.Winner winner = state == STATE.GAME_WON ? GameResult.Winner.HUMAN :
+                GameResult.Winner.COMPUTER;
+        GameResult defeat = new GameResult(this.wordToFind, getNbErrors(),
+                winner);
+
+        this.last5Games.add(defeat);
+        if (this.last5Games.size() > 5) this.last5Games.removeFirst();
+        setAppState(state);
+
+//        this.setNbErrors(0);
+//        this.setTotalPoints(0);
+//        this.setSuccessPercentage(0.00);
+        // Controller triggers after defeat need this value,
+//        this.wordToFind = null;
     }
 }

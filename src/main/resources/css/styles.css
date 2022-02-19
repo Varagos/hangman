@@ -23,3 +23,11 @@
     -fx-background-color: #C0A080;
     -fx-padding: 10 20 10 20;
 }
+
+.outline-label {
+    -fx-fill: white;
+    -fx-stroke: firebrick;
+    -fx-stroke-width: 2px;
+    -fx-text-shadow: #000 0px 0px 1px,   #000 0px 0px 1px,   #000 0px 0px 1px,
+                 #000 0px 0px 1px,   #000 0px 0px 1px,   #000 0px 0px 1px;
+}

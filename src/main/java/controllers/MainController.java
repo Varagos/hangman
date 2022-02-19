@@ -13,6 +13,8 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 import org.kordamp.bootstrapfx.scene.layout.Panel;
@@ -44,6 +46,14 @@ public class MainController implements Initializable {
     private Label triesRemaining;
     @FXML
     private ImageView myImageView;
+    @FXML
+    private MenuItem startMenuItem;
+    @FXML
+    private MenuItem dictionaryMenuItem;
+    @FXML
+    private MenuItem solutionMenuItem;
+
+    private ToggleGroup group;
 
     Image[] myImages = {
             new Image(getClass().getResourceAsStream("/images/hangman1.png")),
@@ -55,17 +65,25 @@ public class MainController implements Initializable {
     };
 
     private HangmanGame hangmanGame;
+
     private DictionaryManager dictionaryManager;
+
 
     public void setStageAndSetupListeners(Stage stage) {
         lowerGridPane.prefWidthProperty().bind(stage.widthProperty());
+
+        rightVBox.prefWidthProperty().bind(stage.widthProperty().divide(2));
+        leftVBox.prefWidthProperty().bind(stage.widthProperty().divide(2));
+        // Surrender space based on visibility
+        rightVBox.managedProperty().bind(rightVBox.visibleProperty());
     }
 
     private void endGameAlert() {
+        String wordToFind = hangmanGame.getWordToFind();
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Oops");
-        alert.setContentText("You have made 6 mistakes");
-        alert.setHeaderText("Game over, the word was: " + hangmanGame.getWordToFind());
+        alert.setContentText("You have lost!");
+        alert.setHeaderText("Game over, the word was: " + wordToFind);
         alert.showAndWait();
     }
 
@@ -75,13 +93,12 @@ public class MainController implements Initializable {
      */
     @FXML
     private void startApp() {
+        this.rightVBox.setVisible(true);
+        this.mainBorderPane.setCenter(null);
         System.out.println("Starting new game...");
-        if (dictionaryManager.getActiveDictionary() == null) {
-            ErrorDialog.display("Failed to start new game", "Please load a dictionary first");
-            return;
-        }
         hangmanGame.newGame();
-//        populateRightGridPane();
+        String wordFound = hangmanGame.getWordFound();
+        initializeWordToggleButtons(wordFound);
     }
 
     /*
@@ -150,7 +167,6 @@ public class MainController implements Initializable {
      */
     @FXML
     private void showLastRoundsInfo() {
-        System.out.println("showLastRoundsInfo");
         RoundsDialog.display(this.hangmanGame);
     }
 
@@ -159,10 +175,16 @@ public class MainController implements Initializable {
      */
     @FXML
     private void solveGame() {
-        System.out.println("solveGame");
+        this.handleDefeat();
     }
 
     private void initializeTopSection() {
+        startMenuItem.disableProperty().bind(
+                Bindings.or(this.dictionaryManager.dictionaryLoadedProperty().not(),
+                        this.hangmanGame.appStateProperty().isEqualTo(HangmanGame.STATE.PLAYING)
+                ));
+        dictionaryMenuItem.disableProperty().bind(this.dictionaryManager.dictionaryLoadedProperty().not());
+        solutionMenuItem.disableProperty().bind(this.hangmanGame.appStateProperty().isNotEqualTo(HangmanGame.STATE.PLAYING));
         activeDictionaryLength.textProperty().bind(
                 Bindings.concat("Words in active dictionary ")
                         .concat(dictionaryManager.activeDictionaryLengthProperty().asString())
@@ -176,60 +198,24 @@ public class MainController implements Initializable {
                 Bindings.concat("Success Percentage ")
                         .concat(Bindings.format("%.2f", hangmanGame.successPercentageProperty())));
 
+
     }
 
-    private void populateRightGridPane(int letterIndex) {
-        String wordToFind = hangmanGame.getWordToFind();
-        Label letter = new Label("letter index" + letterIndex);
-        rightVBox.getChildren().setAll(letter);
 
-//        Panel panel = new Panel("This is the title");
-//        panel.getStyleClass().add("panel-primary");                            //(2)
-        Stage root = (Stage) mainBorderPane.getScene().getWindow();
-        rightVBox.setPrefWidth(root.getWidth() / 2);
-        rightVBox.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
-        rightVBox.setStyle("-fx-border-color: black");
-
-        // TODO Calculate view lists on word change event and not on letter click listener
-        // (pre-calculate)
-        List<Map<Integer, ArrayList<Character>>> indexLetterProbs =
-                hangmanGame.getPositionLetterProbs();
-        Map<Integer, ArrayList<Character>> currentIndexLetterProbs =
-                indexLetterProbs.get(letterIndex);
-        if (currentIndexLetterProbs == null) {
-            System.out.println("ERROR null map for index:" + letterIndex);
-            return;
-        }
-        List<Integer> pointKeys =
-                new ArrayList<>(currentIndexLetterProbs.keySet());
-        Collections.sort(pointKeys);
-
-        for (Integer points : pointKeys) {
-            List<Character> pointChars = currentIndexLetterProbs.get(points);
-//            System.out.println("Key = " + entry.getKey() +
-//                    ", Value = " + entry.getValue());
-            Panel panel = new Panel(points + " Points letters");
-            panel.getStyleClass().add("panel-primary");                            //(2)
-            FlowPane panelBody = new FlowPane();
-            for (Character pointsLetter : pointChars) {
-                Label letterLabel = new Label(String.valueOf(pointsLetter));
-                letterLabel.getStyleClass().setAll("lbl", "lbl-info", "p");
-                panelBody.getChildren().add(letterLabel);
-            }
-            panel.setBody(panelBody);
-            rightVBox.getChildren().add(panel);
-        }
-
-
-//        mainBorderPane.setRight(panel);
-
-//        gridpane.setPrefSize(2000, 2000); // Default width and height
-//        gridpane.setPrefWidth(mainBorderPane.widthProperty().getValue());
-//        gridpane.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
-    }
-
-    private void updateWordToggleButtons(String newWordFound) {
-        final ToggleGroup group = new ToggleGroup();
+    /**
+     * Gets triggered when wordFound changes,
+     * builds the ui for the word found using toggle buttons
+     * for each letter
+     * Sets listeners for each toggle button which populate
+     * the bottom form and right list upon click
+     *
+     * @param newWordFound String representation of letters
+     *                     and underscores(_) for word found
+     *                     so far
+     */
+    private void initializeWordToggleButtons(String newWordFound) {
+//        final ToggleGroup group = new ToggleGroup();
+        this.group = new ToggleGroup();
         ToggleButton[] letterButtons = new ToggleButton[newWordFound.length()];
         for (int i = 0; i < newWordFound.length(); i++) {
             letterButtons[i] = new ToggleButton(newWordFound.substring(i, i + 1));
@@ -254,7 +240,6 @@ public class MainController implements Initializable {
                 populateRightGridPane(index);
             }
         });
-
     }
 
     private void populateButtonForm(final int letterIndex) {
@@ -272,14 +257,16 @@ public class MainController implements Initializable {
             int col = (letterAscii - 65) % 13;
             final char finalLetterAscii = (char) letterAscii;
             Button letterButton = new Button(" " + finalLetterAscii + " ");
-            letterButton.getStyleClass().setAll("btn", "btn-danger", "btn-sm");                     //(2)
+            letterButton.getStyleClass().setAll("btn", "btn-warning", "btn-sm");
             lowerGridPane.add(letterButton, col, row);
 
             GridPane.setHalignment(letterButton, HPos.CENTER); // To align horizontally in the cell
             GridPane.setValignment(letterButton, VPos.CENTER); // To align vertically in the cell
             letterButton.setAlignment(Pos.CENTER);
+
+            // Sets disabled and red for wrong letters so far
             if (currentPositionWrongLetters.contains(finalLetterAscii)) {
-                // TODO fix it's not disabled
+                letterButton.getStyleClass().setAll("btn", "btn-danger", "btn-sm");
                 letterButton.setDisable(true);
             } else {
                 setFormLetterListener(letterButton, letterIndex, finalLetterAscii);
@@ -290,11 +277,135 @@ public class MainController implements Initializable {
     private void setFormLetterListener(Button letterButton, int letterIndex, char letterValue) {
         letterButton.setOnAction(e -> {
             System.out.println("Clicked column: " + letterIndex + ", and letter: " + letterValue);
-            boolean result = hangmanGame.handleNewLetter(letterIndex, letterValue);
-            if (result) lowerGridPane.getChildren().clear();
-            // disable buutton based on result instead of rerender all buttons?
-//          myButton.setEnabled(false);
+            boolean letterWasCorrect = hangmanGame.handleNewLetter(letterIndex, letterValue);
+
+            // 4 Possible outcomes
+            if (hangmanGame.gameWon()) {
+                this.handleVictory();
+                return;
+            }
+            if (letterWasCorrect) {
+                this.handleCorrectLetter();
+                return;
+            }
+            if (hangmanGame.gameLost()) {
+                this.handleDefeat();
+                return;
+            }
+            this.handleWrongLetter(letterIndex);
         });
+    }
+
+    private void populateRightGridPane(int letterIndex) {
+        Label letter = new Label("letter index:" + letterIndex);
+        rightVBox.getChildren().setAll(letter);
+        rightVBox.setSpacing(5);
+
+        rightVBox.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+//        rightVBox.setStyle("-fx-border-color: black");
+        rightVBox.setPadding(new Insets(10, 20, 10, 20));
+        letter.getStyleClass().setAll("tries-remaining");
+
+        // TODO Calculate view lists on key enter event and not on letter tab change
+        // (pre-calculate)
+        List<Map<Integer, ArrayList<Character>>> indexLetterProbs =
+                hangmanGame.getPositionLetterProbs();
+        Map<Integer, ArrayList<Character>> currentIndexLetterProbs =
+                indexLetterProbs.get(letterIndex);
+        if (currentIndexLetterProbs == null) {
+            System.out.println("ERROR null map for index:" + letterIndex);
+            return;
+        }
+        List<Integer> pointKeys =
+                new ArrayList<>(currentIndexLetterProbs.keySet());
+        Collections.sort(pointKeys);
+
+        for (Integer points : pointKeys) {
+            List<Character> pointChars = currentIndexLetterProbs.get(points);
+//            System.out.println("Key = " + entry.getKey() +
+//                    ", Value = " + entry.getValue());
+            Panel panel = new Panel(points + " Points letters");
+            panel.getStyleClass().add("panel-default");                            //(2)
+            FlowPane panelBody = new FlowPane();
+            for (Character pointsLetter : pointChars) {
+                Label letterLabel = new Label(String.valueOf(pointsLetter));
+                letterLabel.getStyleClass().setAll("lbl", "lbl-info", "p");
+                panelBody.getChildren().add(letterLabel);
+            }
+            panel.setBody(panelBody);
+            rightVBox.getChildren().add(panel);
+        }
+    }
+
+
+    private void handleVictory() {
+        System.out.println("\nYou win!");
+        String wordToFind = this.hangmanGame.getWordToFind();
+        this.revealWord(wordToFind);
+        hangmanGame.endGame(HangmanGame.STATE.GAME_WON);
+        Label text = new Label("Victory, \nlet's go!");
+        Font font = Font.font("Comic Sans MS", FontWeight.EXTRA_BOLD, 30);
+        text.setFont(font);
+        text.setStyle("-fx-text-inner-color: red;");
+        this.rightVBox.setVisible(false);
+        this.mainBorderPane.setCenter(text);
+        this.lowerGridPane.getChildren().clear();
+
+        this.rightVBox.getChildren().clear();
+    }
+
+    private void handleDefeat() {
+        System.out.println("\nYou lose!");
+        System.out.println("=> Word to find was : " + hangmanGame.getWordToFind());
+
+        String wordToFind = this.hangmanGame.getWordToFind();
+        hangmanGame.endGame(HangmanGame.STATE.GAME_LOST);
+
+        Label text = new Label("Defeat, \nstart over");
+
+        Font font = Font.font("Comic Sans MS", FontWeight.EXTRA_BOLD, 30);
+        text.setFont(font);
+        text.setStyle("-fx-text-inner-color: red;");
+
+        this.rightVBox.setVisible(false);
+        this.mainBorderPane.setCenter(text);
+        this.lowerGridPane.getChildren().clear();
+        this.endGameAlert();
+        this.revealWord(wordToFind);
+
+        this.rightVBox.getChildren().clear();
+    }
+
+    private void handleCorrectLetter() {
+        lowerGridPane.getChildren().clear();
+        String wordFound = this.hangmanGame.getWordFound();
+        initializeWordToggleButtons(wordFound);
+
+        this.lowerGridPane.getChildren().clear();
+        this.rightVBox.getChildren().clear();
+    }
+
+    private void handleWrongLetter(int letterIndex) {
+        String wordFound = this.hangmanGame.getWordFound();
+        // TODO (optimize) update instead of re-initializing
+        initializeWordToggleButtons(wordFound);
+        this.group.selectToggle(group.getToggles().get(letterIndex));
+    }
+
+
+    private void revealWord(String wordToFind) {
+        final ToggleGroup group = new ToggleGroup();
+        ToggleButton[] letterButtons = new ToggleButton[wordToFind.length()];
+        for (int i = 0; i < wordToFind.length(); i++) {
+            letterButtons[i] = new ToggleButton(wordToFind.substring(i, i + 1));
+            letterButtons[i].setMinSize(Button.USE_PREF_SIZE, Button.USE_PREF_SIZE);
+            letterButtons[i].getStyleClass().setAll("btn", "btn-warning");
+            //btn, btn-primary, first
+            letterButtons[i].setToggleGroup(group);
+            letterButtons[i].setDisable(true);
+        }
+        wordContainer.getChildren().setAll(letterButtons);
+        wordContainer.getStyleClass().setAll("btn-group-horizontal");
     }
 
     @Override
@@ -314,29 +425,15 @@ public class MainController implements Initializable {
         );
 
         hangmanGame.nbErrorsProperty().addListener((v, oldValue, newValue) -> {
-            System.out.println("newValue " + newValue.toString());
             if (newValue.intValue() == 0) {
                 // game has restarted
-                System.out.println("0 errors, setting image...");
+                System.out.println("0 errors, resetting image...");
                 myImageView.setImage(myImages[0]);
                 return;
             }
             int index = newValue.intValue() - 1;
             System.out.println(newValue.intValue() - 1 + " errors, setting image...");
             myImageView.setImage(myImages[index]);
-            if (newValue.intValue() == 6) {
-                endGameAlert();
-            }
         });
-
-        hangmanGame.wordFoundProperty().addListener((o, oldValue, newValue) -> {
-            System.out.println("wordFound event listener triggered");
-            System.out.println("newValue " + newValue);
-            updateWordToggleButtons(newValue);
-        });
-
     }
-    /**
-     * TODO add change listener on letter string property
-     */
 }

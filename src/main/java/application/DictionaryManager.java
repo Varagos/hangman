@@ -9,20 +9,33 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class DictionaryManager {
-    private String DICT_DIRECTORY = "medialab";
+    private final String DICT_DIRECTORY = "medialab";
     private String activeDictionary = null;
     private IntegerProperty activeDictionaryLength = new SimpleIntegerProperty(
             this,
             "activeDictionaryLength",
             0);
 
-    private Set<String> activeDictWords = new HashSet<String>();
+    private BooleanProperty dictionaryLoaded = new SimpleBooleanProperty(this, "dictionaryLoaded"
+            , false);
+
+    private Set<String> activeDictWords = new HashSet<>();
+
+    public BooleanProperty dictionaryLoadedProperty() {
+        return dictionaryLoaded;
+    }
+
+    public void setDictionaryLoaded(boolean dictionaryLoaded) {
+        this.dictionaryLoaded.set(dictionaryLoaded);
+    }
 
     /**
      * Creates a dictionary
@@ -31,8 +44,8 @@ public class DictionaryManager {
      *                      will be user to identify the dictionary
      * @param openLibraryId The Open Library ID which needs to match a book from
      *                      https://openlibary.org.works API
-     * @throws UndersizeException
-     * @throws UnbalancedException
+     * @throws UndersizeException  Not enough words
+     * @throws UnbalancedException Not enough long words
      */
     public void createDictionary(String dictionaryId, String openLibraryId) throws
             UndersizeException, UnbalancedException {
@@ -45,9 +58,7 @@ public class DictionaryManager {
         int dictSize = words.size();
         if (dictSize < 20) throw new UndersizeException("Dictionary has " + dictSize + " words");
         int moreThan9Letters = 0;
-        Iterator value = words.iterator();
-        while (value.hasNext()) {
-            String word = (String) value.next();
+        for (String word : words) {
             if (word.length() >= 9) moreThan9Letters++;
         }
         double longWordsPercentage = (((double) moreThan9Letters / dictSize) * 100);
@@ -73,13 +84,13 @@ public class DictionaryManager {
         }
         File[] listOfFiles = dir.listFiles();
 
-        for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile()) {
-                System.out.println("File " + listOfFiles[i].getName());
-                String fileNameWithOutExt = listOfFiles[i].getName().replaceFirst("[.][^.]+$", "");
+        for (File listOfFile : listOfFiles) {
+            if (listOfFile.isFile()) {
+                System.out.println("File " + listOfFile.getName());
+                String fileNameWithOutExt = listOfFile.getName().replaceFirst("[.][^.]+$", "");
                 choices.add(fileNameWithOutExt);
-            } else if (listOfFiles[i].isDirectory()) {
-                System.out.println("Directory " + listOfFiles[i].getName());
+            } else if (listOfFile.isDirectory()) {
+                System.out.println("Directory " + listOfFile.getName());
             }
         }
         return choices;
@@ -113,6 +124,7 @@ public class DictionaryManager {
             e.printStackTrace();
         }
         setActiveDictionaryLength(activeDictWords.size());
+        this.setDictionaryLoaded(true);
     }
 
     public int getActiveDictionaryLength() {
@@ -131,7 +143,7 @@ public class DictionaryManager {
         return activeDictWords;
     }
 
-    public void setActiveDictWords(Set<String> activeDictWords) {
+    private void setActiveDictWords(Set<String> activeDictWords) {
         this.activeDictWords = activeDictWords;
     }
 
